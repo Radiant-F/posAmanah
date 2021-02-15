@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import {styles} from './Login';
+import {Picker} from '@react-native-picker/picker';
 
 export default class RegisterMember extends Component {
   constructor(props) {
@@ -21,9 +22,11 @@ export default class RegisterMember extends Component {
       email: '',
       password: '',
       password_confirmation: '',
+      daftar_role: 0,
       loading: false,
       remember: false,
       secure: true,
+      secure2: true,
       member: false,
       url: 'https://mail.google.com',
     };
@@ -31,22 +34,30 @@ export default class RegisterMember extends Component {
 
   register() {
     if (
-      this.state.name &&
-      this.state.email &&
-      this.state.password &&
-      this.state.password_confirmation != ''
+      this.state.daftar_role == 0 ||
+      (this.state.name &&
+        this.state.email &&
+        this.state.password &&
+        this.state.password_confirmation != '')
     ) {
-      const {name, email, password, password_confirmation} = this.state;
+      const {
+        name,
+        email,
+        password,
+        password_confirmation,
+        daftar_role,
+      } = this.state;
       var dataToSend = {
         name: name,
         email: email,
         password: password,
         password_confirmation: password_confirmation,
+        role_id: daftar_role,
       };
       console.log('mendaftar...');
       this.setState({loading: true});
       fetch(
-        this.state.member
+        this.state.daftar_role == 5
           ? 'https://amanah-mart.herokuapp.com/api/registermember'
           : 'https://amanah-mart.herokuapp.com/api/register',
         {
@@ -154,6 +165,7 @@ export default class RegisterMember extends Component {
   }
 
   render() {
+    console.log(this.state.daftar_role);
     return (
       <View style={{flex: 1}}>
         <ImageBackground
@@ -211,9 +223,11 @@ export default class RegisterMember extends Component {
                     this.setState({password_confirmation: input})
                   }
                 />
-                {this.state.secure ? (
+                {this.state.secure2 ? (
                   <TouchableOpacity
-                    onPress={() => this.setState({secure: !this.state.secure})}>
+                    onPress={() =>
+                      this.setState({secure2: !this.state.secure2})
+                    }>
                     <Image
                       source={require('../assets/lock.png')}
                       style={styles.imgLock}
@@ -221,7 +235,9 @@ export default class RegisterMember extends Component {
                   </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
-                    onPress={() => this.setState({secure: !this.state.secure})}>
+                    onPress={() =>
+                      this.setState({secure2: !this.state.secure2})
+                    }>
                     <Image
                       source={require('../assets/unlock.png')}
                       style={styles.imgLock}
@@ -229,15 +245,32 @@ export default class RegisterMember extends Component {
                   </TouchableOpacity>
                 )}
               </View>
+              <View
+                style={{
+                  width: '90%',
+                  borderBottomColor: 'orange',
+                  borderBottomWidth: 2,
+                }}>
+                <Text style={{marginTop: 5}}>Daftar Sebagai:</Text>
+                <Picker
+                  mode="dialog"
+                  selectedValue={this.state.daftar_role}
+                  onValueChange={(value, index) =>
+                    this.setState({daftar_role: value})
+                  }>
+                  <Picker.Item label="= Pilih Peran Anda =" value={0} />
+                  <Picker.Item label="Sebagai Member" value={5} />
+                  <Picker.Item label="Sebagai Staff" value={3} />
+                  <Picker.Item label="Sebagai Kasir" value={4} />
+                </Picker>
+              </View>
               {this.state.loading ? (
-                <TouchableNativeFeedback onPress={() => this.registerOption()}>
-                  <View style={styles.button}>
-                    <ActivityIndicator color="white" size="small" />
-                  </View>
-                </TouchableNativeFeedback>
+                <View style={{...styles.button, marginVertical: 10}}>
+                  <ActivityIndicator color="white" size="small" />
+                </View>
               ) : (
                 <TouchableNativeFeedback onPress={() => this.registerOption()}>
-                  <View style={styles.button}>
+                  <View style={{...styles.button, marginVertical: 10}}>
                     <Text style={styles.textButton}>Daftar</Text>
                   </View>
                 </TouchableNativeFeedback>
