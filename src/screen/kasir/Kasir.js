@@ -6,18 +6,8 @@ export default class Kasir extends Component {
   constructor() {
     super();
     this.state = {
-      password: '',
+      test: 'Member',
     };
-  }
-
-  componentDidMount() {
-    AsyncStorage.getItem('password').then((value) => {
-      if (value) {
-        this.setState({password: value});
-      } else {
-        console.log('tidak ada yang disimpan.');
-      }
-    });
   }
 
   logout() {
@@ -29,18 +19,14 @@ export default class Kasir extends Component {
   render() {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
-        {this.state.password != '' ? (
-          <View>
-            <Text style={{fontSize: 30}}> Selamat Datang !</Text>
-            <Text style={{fontSize: 30}}> Data anda diingat </Text>
-          </View>
-        ) : (
-          <View>
-            <Text style={{fontSize: 30}}> Selamat Datang! </Text>
-            <Text style={{fontSize: 30}}> Data anda tidak diingat </Text>
-          </View>
-        )}
-        <Button title="Keluar" color="orange" onPress={() => this.logout()} />
+        <Text>{this.state.test}</Text>
+        <Button
+          title="Kembali"
+          color="orange"
+          onPress={() =>
+            this.props.navigation.navigate('Member', {ganti: this.state.test})
+          }
+        />
       </View>
     );
   }
