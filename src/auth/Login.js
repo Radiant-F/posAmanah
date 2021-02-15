@@ -84,31 +84,29 @@ export class Login extends Component {
               : console.log('data user tidak diingat.');
             if (responseJSON.user.role_id == 2) {
               this.setState({loading: false});
-              this.props.navigation.replace('Pimpinan', {
-                screen: 'Pimpinan',
-              });
+              this.props.navigation.replace('Pimpinan');
             } else if (responseJSON.user.role_id == 3) {
               this.setState({loading: false});
-              this.props.navigation.replace('Staff', {screen: 'Staff'});
+              this.props.navigation.replace('Staff');
             } else if (responseJSON.user.role_id == 4) {
-              this.props.navigation.replace('Kasir', {
-                screen: 'Kasir',
-              });
+              this.props.navigation.replace('Kasir');
+            } else if (responseJSON.user.role_id == 5) {
+              this.props.navigation.replace('Member');
             } else {
-              this.props.navigation.replace('Member', {screen: 'Member'});
+              this.failed();
             }
           } else {
             this.setState({loading: false});
-            this.alert();
+            this.failed();
           }
         })
         .catch((err) => console.log('Terjadi Kesalahan. ', err));
     } else {
-      this.alert2();
+      this.alert();
     }
   }
 
-  alert() {
+  failed() {
     Alert.alert(
       'Data tidak ditemukan',
       'Masukan data dengan benar atau daftar.',
@@ -125,7 +123,7 @@ export class Login extends Component {
     );
   }
 
-  alert2() {
+  alert() {
     Alert.alert(
       '',
       'Harap isi semua forum.',
