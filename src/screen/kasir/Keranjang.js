@@ -265,7 +265,7 @@ export default class Keranjang extends Component {
                 onPress={() => this.confirmCart()}>
                 <View style={{...styles.button, width: 125}}>
                   {this.state.confirm_loading ? (
-                    <Text>Tunggu..</Text>
+                    <Text>Tunggus..</Text>
                   ) : (
                     <Text>Konfirmasi</Text>
                   )}
