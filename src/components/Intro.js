@@ -12,17 +12,18 @@ export default class Intro extends Component {
     };
   }
 
-  componentDidMount() {
+  done() {
     AsyncStorage.setItem('first', this.state.done).catch((err) =>
       console.log('storage problem. ', err),
     );
+    this.props.navigation.replace('Login');
   }
 
   render() {
     return (
       <Onboarding
-        onSkip={() => this.props.navigation.replace('Login')}
-        onDone={() => this.props.navigation.replace('Login')}
+        onSkip={() => this.done()}
+        onDone={() => this.done()}
         nextLabel="Lanjut"
         skipLabel="Lewati"
         pages={[

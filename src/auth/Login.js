@@ -73,15 +73,13 @@ export class Login extends Component {
           const role_user = ['role', JSON.stringify(role_id)];
           if (responseJSON.token != null) {
             this.props.changeUser({token: token});
-            this.setState({
-              role: responseJSON.user.role_id,
-              token: responseJSON.token,
-            });
             this.state.check
               ? AsyncStorage.multiSet([token_user, role_user]).catch((err) =>
                   console.log(err),
                 )
-              : console.log('data user tidak diingat.');
+              : AsyncStorage.setItem('token', token).catch((err) =>
+                  console.log(err),
+                );
             if (responseJSON.user.role_id == 2) {
               this.setState({loading: false});
               this.props.navigation.replace('Pimpinan');
@@ -100,13 +98,14 @@ export class Login extends Component {
             this.failed();
           }
         })
-        .catch((err) => console.log('Terjadi Kesalahan. ', err));
+        .catch((err) => this.failed(err));
     } else {
       this.alert();
     }
   }
 
   failed() {
+    this.setState({loading: false});
     Alert.alert(
       'Data tidak ditemukan',
       'Masukan data dengan benar atau daftar.',
@@ -127,6 +126,19 @@ export class Login extends Component {
     Alert.alert(
       '',
       'Harap isi semua forum.',
+      [
+        {
+          text: 'Ok',
+        },
+      ],
+      {cancelable: false},
+    );
+  }
+
+  fatal(err) {
+    Alert.alert(
+      'Koneksi Tidak Stabil',
+      'Coba lagi beberapa saat.',
       [
         {
           text: 'Ok',

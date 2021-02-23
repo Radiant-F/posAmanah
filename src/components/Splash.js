@@ -12,7 +12,7 @@ export class Splash extends Component {
             AsyncStorage.getItem('role').then((value) => {
               if (value == '1') {
                 this.props.navigation.replace('Pimpinan');
-              } else if (value == '2') {
+              } else if (value == '4') {
                 this.props.navigation.replace('Kasir');
               } else if (value == '3') {
                 this.props.navigation.replace('Staff');
@@ -47,9 +47,8 @@ export class Splash extends Component {
         }}>
         <Image
           source={require('../assets/logo.png')}
-          style={{width: '70%', height: '49%'}}
+          style={{width: 230, height: 230}}
         />
-        <Text>Sample text</Text>
       </View>
     );
   }

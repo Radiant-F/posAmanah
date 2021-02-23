@@ -22,7 +22,6 @@ export default class RegisterMember extends Component {
       email: '',
       password: '',
       password_confirmation: '',
-      daftar_role: 0,
       loading: false,
       remember: false,
       secure: true,
@@ -34,40 +33,27 @@ export default class RegisterMember extends Component {
 
   register() {
     if (
-      this.state.daftar_role == 0 ||
-      (this.state.name &&
-        this.state.email &&
-        this.state.password &&
-        this.state.password_confirmation != '')
+      this.state.name &&
+      this.state.email &&
+      this.state.password &&
+      this.state.password_confirmation != ''
     ) {
-      const {
-        name,
-        email,
-        password,
-        password_confirmation,
-        daftar_role,
-      } = this.state;
+      const {name, email, password, password_confirmation} = this.state;
       var dataToSend = {
         name: name,
         email: email,
         password: password,
         password_confirmation: password_confirmation,
-        role_id: daftar_role,
       };
       console.log('mendaftar...');
       this.setState({loading: true});
-      fetch(
-        this.state.daftar_role == 5
-          ? 'https://amanah-mart.herokuapp.com/api/registermember'
-          : 'https://amanah-mart.herokuapp.com/api/register',
-        {
-          method: 'POST',
-          body: JSON.stringify(dataToSend),
-          headers: {
-            'Content-Type': 'application/json',
-          },
+      fetch('https://amanah-mart.herokuapp.com/api/registermember', {
+        method: 'POST',
+        body: JSON.stringify(dataToSend),
+        headers: {
+          'Content-Type': 'application/json',
         },
-      )
+      })
         .then((response) => response.json())
         .then((responseJson) => {
           console.log(responseJson);
@@ -85,7 +71,7 @@ export default class RegisterMember extends Component {
           this.error();
         });
     } else {
-      ToastAndroid.show('Harap isi semua form', ToastAndroid.SHORT);
+      ToastAndroid.show('Harap isi dengan benar', ToastAndroid.SHORT);
     }
   }
 
@@ -130,6 +116,7 @@ export default class RegisterMember extends Component {
       ],
       {cancelable: false},
     );
+    this.props.navigation.goBack();
   }
 
   handlePress = async () => {
@@ -141,31 +128,7 @@ export default class RegisterMember extends Component {
     }
   };
 
-  registerStaff() {
-    this.setState({member: false});
-    this.register();
-  }
-
-  registerOption() {
-    Alert.alert(
-      '',
-      'Daftar sebagai Staff atau Member?',
-      [
-        {
-          text: 'Staff',
-          onPress: () => this.registerStaff(),
-        },
-        {
-          text: 'Member',
-          onPress: () => this.register(),
-        },
-      ],
-      {cancelable: true},
-    );
-  }
-
   render() {
-    console.log(this.state.daftar_role);
     return (
       <View style={{flex: 1}}>
         <ImageBackground
@@ -174,7 +137,7 @@ export default class RegisterMember extends Component {
           style={styles.bg}>
           <View style={styles.mainView}>
             <View style={styles.subMainView}>
-              <Text style={styles.mainText}>Register</Text>
+              <Text style={styles.mainText}>Register Member</Text>
               <TextInput
                 placeholder="Nama Anda"
                 underlineColorAndroid="orange"
@@ -245,7 +208,7 @@ export default class RegisterMember extends Component {
                   </TouchableOpacity>
                 )}
               </View>
-              <View
+              {/* <View
                 style={{
                   width: '90%',
                   borderBottomColor: 'orange',
@@ -263,13 +226,13 @@ export default class RegisterMember extends Component {
                   <Picker.Item label="Sebagai Staff" value={3} />
                   <Picker.Item label="Sebagai Kasir" value={4} />
                 </Picker>
-              </View>
+              </View> */}
               {this.state.loading ? (
                 <View style={{...styles.button, marginVertical: 10}}>
                   <ActivityIndicator color="white" size="small" />
                 </View>
               ) : (
-                <TouchableNativeFeedback onPress={() => this.registerOption()}>
+                <TouchableNativeFeedback onPress={() => this.register()}>
                   <View style={{...styles.button, marginVertical: 10}}>
                     <Text style={styles.textButton}>Daftar</Text>
                   </View>
