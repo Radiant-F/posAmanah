@@ -1,8 +1,10 @@
 import React, {Component} from 'react';
 import {Text, View} from 'react-native';
 import {Provider} from 'react-redux';
+import Demo from './src/Demo';
 import {store} from './src/redux/store/index';
 import Navigator from './src/router/Navigator';
+import Edit from './src/screen/staff/EditProduct';
 
 export default class App extends Component {
   render() {
