@@ -10,6 +10,7 @@ import Register from '../auth/Register';
 import Member from '../screen/member/Member';
 import Pimpinan from '../screen/pimpinan/Pimpinan';
 import Staff from '../screen/staff/Staff';
+import EditProduct from '../screen/staff/EditProduct';
 import Kasir from '../screen/kasir/Kasir';
 
 const Stack = createStackNavigator();
@@ -25,6 +26,7 @@ const Navigator = () => {
         <Stack.Screen name="Pimpinan" component={Pimpinan} />
         <Stack.Screen name="Staff" component={Staff} />
         <Stack.Screen name="Kasir" component={Kasir} />
+        <Stack.Screen name="EditProduct" component={EditProduct} />
       </Stack.Navigator>
     </NavigationContainer>
   );
