@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-community/async-storage';
 import React, {Component} from 'react';
+import ImagePicker from 'react-native-image-picker';
 import _ from 'lodash';
 import {
   Button,
@@ -27,10 +28,19 @@ export default class Member extends Component {
       token: this.getToken(),
       data_user: '',
       data_member: '',
+      name: '',
+      email: '',
+      phone_number: '',
+      umur: '',
+      address: '',
+      image: '',
+      photo: '',
+      edited: false,
       modal: false,
       view_topup: false,
       loading: false,
       tombol: true,
+      tombol_profil: false,
     };
   }
 
@@ -47,7 +57,7 @@ export default class Member extends Component {
 
   getUser() {
     console.log('mengambil data..');
-    fetch(`https://amanah-mart.herokuapp.com/api/user`, {
+    fetch(`https://amanah-mart.herokuapp.com/api/me`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${this.state.token}`,
@@ -58,9 +68,16 @@ export default class Member extends Component {
       .then((responseJSON) => {
         if (responseJSON.status == 'Success') {
           this.setState({
-            data_member: responseJSON.data.Member,
-            data_user: responseJSON.data.User,
+            data_user: responseJSON.data[0].user,
+            data_member: responseJSON.data[0],
+            name: responseJSON.data[0].user.name,
+            umur: JSON.stringify(responseJSON.data[0].umur),
+            phone_number: JSON.stringify(responseJSON.data[0].phone_number),
+            email: responseJSON.data[0].user.email,
+            address: responseJSON.data[0].address,
+            image: responseJSON.data[0].image,
           });
+          console.log(this.state.data_member);
           console.log('data dimuat');
         } else {
           console.log('data gagal dimuat');
@@ -68,6 +85,73 @@ export default class Member extends Component {
       })
       .catch((err) => console.log(err));
   }
+
+  updateProfil() {
+    if (this.state.edited != false) {
+      const {name, email, phone_number, umur, address, photo} = this.state;
+      console.log('memperbarui profil..');
+      this.setState({tombol_profil: true});
+      var kirimData = {
+        name: name,
+        email: email,
+        phone_number: phone_number,
+        umur: umur,
+        address: address,
+      };
+      fetch(`https://amanah-mart.herokuapp.com/api/member/update`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        body: this.createFormData(photo, kirimData),
+      })
+        .then((response) => response.json())
+        .then((responseJSON) => {
+          if (responseJSON.status == 'Success') {
+            console.log('profil diperbarui');
+            ToastAndroid.show('Profil diperbarui', ToastAndroid.SHORT);
+            this.setState({tombol_profil: false});
+            this.getUser();
+          } else {
+            console.log('profil gagal diperbarui');
+            ToastAndroid.show('Foto harus diperbarui', ToastAndroid.SHORT);
+            this.setState({tombol_profil: false});
+          }
+        })
+        .catch((err) => this.fatal(err));
+    } else {
+      ToastAndroid.show('Foto harus diperbarui', ToastAndroid.SHORT);
+      console.log('error');
+    }
+  }
+
+  createFormData = (photo, body) => {
+    const data = new FormData();
+    data.append('image', {
+      name: photo.fileName,
+      type: photo.type,
+      uri:
+        Platform.OS === 'android'
+          ? photo.uri
+          : photo.uri.replace('file://', ''),
+    });
+    Object.keys(body).forEach((key) => {
+      data.append(key, body[key]);
+    });
+    return data;
+  };
+
+  handleEditPhoto = () => {
+    const options = {
+      noData: true,
+    };
+    ImagePicker.showImagePicker(options, (response) => {
+      if (response.uri) {
+        this.setState({photo: response, edited: true});
+        console.log(JSON.stringify(response.fileName));
+      }
+    });
+  };
 
   topUp() {
     if (this.state.topup >= 10000) {
@@ -126,16 +210,38 @@ export default class Member extends Component {
     });
   }
 
+  fatal(err) {
+    console.log(err);
+    this.setState({tombol_profil: false});
+    Alert.alert(
+      'Koneksi Tidak Stabil',
+      'Coba lagi beberapa saat.',
+      [
+        {
+          text: 'Ok',
+        },
+      ],
+      {cancelable: false},
+    );
+  }
+
   render() {
     return (
       <View style={{flex: 1}}>
         <ImageBackground style={styles.bg}>
           <View style={{padding: 10}}>
             <View style={styles.header}>
-              <Image
-                source={require('../../assets/react.png')}
-                style={styles.imgIcon}
-              />
+              {this.state.image == '' ? (
+                <Image
+                  source={require('../../assets/react.png')}
+                  style={styles.imgIcon}
+                />
+              ) : (
+                <Image
+                  source={{uri: this.state.image}}
+                  style={styles.imgIcon}
+                />
+              )}
               <Text style={{color: 'white'}}>Amanah Mart</Text>
               <TouchableWithoutFeedback
                 onPress={() => this.setState({modal: true})}>
@@ -222,9 +328,6 @@ export default class Member extends Component {
             ) : (
               <View></View>
             )}
-            {/* <View style={styles.viewHistory}>
-              <Text>Riwayat Pembelian</Text>
-            </View> */}
           </View>
           <Modal
             visible={this.state.modal}
@@ -256,11 +359,138 @@ export default class Member extends Component {
                     />
                   </TouchableOpacity>
                 </View>
-                <TouchableNativeFeedback onPress={() => this.logout()}>
-                  <View style={styles.button}>
-                    <Text style={styles.text}>Keluar</Text>
+                <View style={{width: '100%'}}>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                    }}>
+                    <View>
+                      <TouchableNativeFeedback
+                        onPress={() => this.handleEditPhoto()}>
+                        {this.state.photo == '' ? (
+                          <Image
+                            source={{uri: this.state.data_member.image}}
+                            style={styles.imgPPP}
+                          />
+                        ) : (
+                          <Image
+                            source={{uri: this.state.photo.uri}}
+                            style={styles.imgPPP}
+                          />
+                        )}
+                      </TouchableNativeFeedback>
+                    </View>
+                    <View>
+                      <View style={{flexDirection: 'row'}}>
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                          }}>
+                          <Image
+                            source={require('../../assets/user-shape.png')}
+                            style={{...styles.imgIcon, marginRight: 5}}
+                          />
+                          <TextInput
+                            value={this.state.name}
+                            maxLength={10}
+                            underlineColorAndroid="orange"
+                            placeholder="Nama Anda"
+                            onChangeText={(input) =>
+                              this.setState({name: input})
+                            }
+                          />
+                        </View>
+                        <View
+                          style={{flexDirection: 'row', alignItems: 'center'}}>
+                          <Text>|</Text>
+                          <TextInput
+                            value={this.state.umur}
+                            keyboardType="decimal-pad"
+                            maxLength={3}
+                            underlineColorAndroid="orange"
+                            placeholder="Umur Anda"
+                            onChangeText={(input) =>
+                              this.setState({umur: input})
+                            }
+                          />
+                        </View>
+                      </View>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <Image
+                          source={require('../../assets/gmail-logo.png')}
+                          style={{...styles.imgIcon, marginRight: 5}}
+                        />
+                        <TextInput
+                          style={{flex: 1}}
+                          value={this.state.email}
+                          underlineColorAndroid="orange"
+                          placeholder="Email Anda"
+                          onChangeText={(input) =>
+                            this.setState({email: input})
+                          }
+                        />
+                      </View>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <Image
+                          source={require('../../assets/phone-call-button.png')}
+                          style={{...styles.imgIcon, marginRight: 5}}
+                        />
+                        <TextInput
+                          style={{flex: 1}}
+                          value={this.state.phone_number}
+                          keyboardType="decimal-pad"
+                          underlineColorAndroid="orange"
+                          placeholder="Nomor Anda"
+                          onChangeText={(input) =>
+                            this.setState({phone_number: input})
+                          }
+                        />
+                      </View>
+                    </View>
                   </View>
-                </TouchableNativeFeedback>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Image
+                      source={require('../../assets/map-placeholder.png')}
+                      style={{...styles.imgIcon, marginRight: 5}}
+                    />
+                    <TextInput
+                      value={this.state.address}
+                      placeholder="Alamat"
+                      underlineColorAndroid="orange"
+                      style={{flex: 1}}
+                      onChangeText={(input) => this.setState({address: input})}
+                    />
+                  </View>
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'space-around',
+                    }}>
+                    <TouchableNativeFeedback
+                      disabled={this.state.tombol_profil}
+                      onPress={() => this.logout()}>
+                      <View style={styles.button}>
+                        <Text style={styles.text}>Keluar</Text>
+                      </View>
+                    </TouchableNativeFeedback>
+                    <TouchableNativeFeedback
+                      disabled={this.state.tombol_profil}
+                      onPress={() => this.updateProfil()}>
+                      <View style={{...styles.button, backgroundColor: 'lime'}}>
+                        {this.state.tombol_profil ? (
+                          <ActivityIndicator size="small" color="white" />
+                        ) : (
+                          <Text style={styles.text}>Perbarui</Text>
+                        )}
+                      </View>
+                    </TouchableNativeFeedback>
+                  </View>
+                </View>
               </View>
             </View>
           </Modal>
@@ -339,5 +569,12 @@ export const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
     elevation: 5,
+  },
+  imgPPP: {
+    width: 90,
+    height: 90,
+    borderRadius: 90 / 2,
+    borderColor: 'orange',
+    borderWidth: 5,
   },
 });
