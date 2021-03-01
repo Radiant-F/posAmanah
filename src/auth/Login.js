@@ -12,27 +12,29 @@ import {
   TouchableNativeFeedback,
   Linking,
   ActivityIndicator,
+  ToastAndroid,
+  Modal,
 } from 'react-native';
 import {connect} from 'react-redux';
 import AsyncStorage from '@react-native-community/async-storage';
 import CheckBox from '@react-native-community/checkbox';
 
-const OpenURLButton = ({url, children}) => {
-  const handlePress = useCallback(async () => {
-    const supported = await Linking.canOpenURL(url);
-    if (supported) {
-      await Linking.openURL(url);
-    } else {
-      Alert.alert(`Don't know how to open this URL: ${url}`);
-    }
-  }, [url]);
+// const OpenURLButton = ({url, children}) => {
+//   const handlePress = useCallback(async () => {
+//     const supported = await Linking.canOpenURL(url);
+//     if (supported) {
+//       await Linking.openURL(url);
+//     } else {
+//       Alert.alert(`Don't know how to open this URL: ${url}`);
+//     }
+//   }, [url]);
 
-  return (
-    <TouchableOpacity style={{margin: 5}} onPress={handlePress}>
-      <Text style={{color: 'grey'}}>{children}</Text>
-    </TouchableOpacity>
-  );
-};
+//   return (
+//     <TouchableOpacity style={{margin: 5}} onPress={handlePress}>
+//       <Text style={{color: 'grey'}}>{children}</Text>
+//     </TouchableOpacity>
+//   );
+// };
 
 export class Login extends Component {
   constructor(props) {
@@ -47,7 +49,8 @@ export class Login extends Component {
       remember: false,
       secure: true,
       check: false,
-      url: 'https://amanah-mart.herokuapp.com/api/password/email',
+      modal: false,
+      url: 'https://mail.google.com',
     };
   }
 
@@ -100,9 +103,67 @@ export class Login extends Component {
         })
         .catch((err) => this.failed(err));
     } else {
-      this.alert();
+      ToastAndroid.show('Isi dengan benar', ToastAndroid.SHORT);
     }
   }
+
+  resetPass() {
+    if (this.state.email != '') {
+      this.setState({loading: true});
+      console.log('mengirim email..');
+      const {email} = this.state;
+      var kirimData = {email: email};
+      fetch(`https://amanah-mart.herokuapp.com/api/password/email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(kirimData),
+      })
+        .then((response) => response.json())
+        .then((responseJSON) => {
+          console.log(responseJSON);
+          if (responseJSON.status == 'Success') {
+            console.log('berhasil mereset');
+            this.setState({loading: false});
+            this.success();
+          } else {
+            console.log('gagal mereset');
+            this.setState({loading: false});
+            this.failed();
+          }
+        })
+        .catch((err) => this.fatal(err));
+    } else {
+      console.log('masukan email');
+    }
+  }
+
+  success() {
+    Alert.alert(
+      'Sukses',
+      'Password direset. Periksa gmail Anda.',
+      [
+        {
+          text: 'Nanti Saja',
+        },
+        {
+          text: 'Buka Gmail',
+          onPress: () => this.handlePress(),
+        },
+      ],
+      {cancelable: false},
+    );
+  }
+
+  handlePress = async () => {
+    const supported = await Linking.canOpenURL(this.state.url);
+    if (supported) {
+      await Linking.openURL(this.state.url);
+    } else {
+      Alert.alert(`URL Tidak Dikenali: ${this.state.url}`);
+    }
+  };
 
   failed() {
     this.setState({loading: false});
@@ -125,7 +186,7 @@ export class Login extends Component {
   alert() {
     Alert.alert(
       '',
-      'Harap isi semua forum.',
+      'Harap isi semua form.',
       [
         {
           text: 'Ok',
@@ -136,6 +197,7 @@ export class Login extends Component {
   }
 
   fatal(err) {
+    console.log(err);
     Alert.alert(
       'Koneksi Tidak Stabil',
       'Coba lagi beberapa saat.',
@@ -218,9 +280,75 @@ export class Login extends Component {
                   </View>
                 </TouchableNativeFeedback>
               )}
-              <OpenURLButton url={this.state.url}>Lupa Password?</OpenURLButton>
+              <TouchableOpacity
+                style={{margin: 5}}
+                onPress={() => this.setState({modal: true})}>
+                <Text style={{color: 'grey'}}>Lupa Password?</Text>
+              </TouchableOpacity>
+              {/* <OpenURLButton url={this.state.url}>Lupa Password?</OpenURLButton> */}
             </View>
           </View>
+          <Modal
+            onRequestClose={() => this.setState({modal: false})}
+            transparent
+            visible={this.state.modal}
+            animationType="fade">
+            <View
+              style={{
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: '100%',
+                backgroundColor: '#00000069',
+              }}>
+              <View style={styles.modals}>
+                <View style={styles.modalHeader}>
+                  <Image
+                    source={require('../assets/lock.png')}
+                    style={styles.imgHeader}
+                  />
+                  <Text>Reset Password</Text>
+                  <TouchableOpacity
+                    onPress={() => this.setState({modal: false})}>
+                    <Image
+                      source={require('../assets/close-button.png')}
+                      style={styles.imgHeader}
+                    />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.modalContainer}>
+                  <Text> Masukan Email Anda</Text>
+                  <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                    <Image
+                      source={require('../assets/gmail-logo.png')}
+                      style={{...styles.imgLock, marginHorizontal: 2.5}}
+                    />
+                    <TextInput
+                      style={{flex: 1}}
+                      underlineColorAndroid="orange"
+                      placeholder="Email"
+                      onChangeText={(input) => this.setState({email: input})}
+                    />
+                  </View>
+                  <TouchableNativeFeedback
+                    disabled={this.state.loading}
+                    onPress={() => this.resetPass()}>
+                    <View
+                      style={{
+                        ...styles.button,
+                        width: 120,
+                        alignSelf: 'center',
+                      }}>
+                      {this.state.loading ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Text style={styles.textButton}>Kirim Email</Text>
+                      )}
+                    </View>
+                  </TouchableNativeFeedback>
+                </View>
+              </View>
+            </View>
+          </Modal>
         </ImageBackground>
       </View>
     );
@@ -298,6 +426,25 @@ export const styles = StyleSheet.create({
       width: 0.5,
       height: 0.5,
     },
+  },
+  modals: {
+    backgroundColor: 'white',
+    width: '90%',
+    borderRadius: 10,
+    elevation: 3,
+    padding: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  imgHeader: {
+    width: 20,
+    height: 20,
+  },
+  modalContainer: {
+    marginVertical: 10,
   },
 });
 
