@@ -33,6 +33,11 @@ export default class Kasir extends Component {
       address: '',
       phone_number: 0,
       loading: false,
+      absen: false,
+      absent: false,
+      loading_absen: false,
+      loading_absent: false,
+      status: 1,
       token: this.getToken(),
     };
   }
@@ -40,8 +45,130 @@ export default class Kasir extends Component {
   getToken() {
     AsyncStorage.getItem('token')
       .then((value) => {
-        console.log(value);
         this.setState({token: value});
+      })
+      .catch((err) => console.log(err));
+    AsyncStorage.getItem('absen')
+      .then((value) => {
+        if (value) {
+          this.setState({absen: true});
+          console.log(value);
+          console.log('sudah absen');
+        } else {
+          console.log('belum absen');
+          console.log(value);
+        }
+      })
+      .catch((err) => console.log(err));
+    AsyncStorage.getItem('absen checkout')
+      .then((value) => {
+        if (value) {
+          this.setState({absent: true});
+          console.log(value);
+          console.log('sudah absen checkout');
+        } else {
+          console.log('belum absen checkout');
+          console.log(value);
+        }
+      })
+      .catch((err) => console.log(err));
+    AsyncStorage.getItem('status')
+      .then((value) => {
+        console.log(JSON.parse(value));
+        if (value == '1') {
+          this.setState({status: JSON.parse(value)});
+        } else if (value == '2') {
+          this.setState({status: JSON.parse(value)});
+        } else if (value == '3') {
+          this.setState({status: JSON.parse(value)});
+        } else {
+          console.log('belom ada status');
+        }
+      })
+      .catch((err) => console.log(err));
+  }
+
+  checkin() {
+    console.log('checkin..');
+    this.setState({loading_absen: true});
+    fetch(`https://amanah-mart.herokuapp.com/api/checkin`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.state.token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((response) => response.json())
+      .then((responseJSON) => {
+        console.log(responseJSON);
+        if (responseJSON.status == 'Success') {
+          console.log('absen sukses');
+          this.setState({
+            absen: true,
+            loading_absen: false,
+            status: responseJSON.data.status,
+          });
+          AsyncStorage.setItem(
+            'status',
+            JSON.stringify(responseJSON.data.status),
+          ).catch((err) => console.log(err));
+          AsyncStorage.setItem(
+            'absen',
+            JSON.stringify(this.state.absen),
+          ).catch((err) => console.log(err));
+        } else {
+          this.setState({
+            absen: true,
+            loading_absen: false,
+            status: responseJSON.data.status,
+          });
+          AsyncStorage.setItem(
+            'absen',
+            JSON.stringify(this.state.absen),
+          ).catch((err) => console.log(err));
+          AsyncStorage.setItem(
+            'status',
+            JSON.stringify(responseJSON.data.status),
+          ).catch((err) => console.log(err));
+          console.log('sudah absen');
+          this.absen();
+        }
+      })
+      .catch((err) => this.absen());
+  }
+
+  checkout() {
+    console.log('checkout..');
+    this.setState({loading_absent: true});
+    fetch(`https://amanah-mart.herokuapp.com/api/checkout`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.state.token}`,
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((response) => response.json())
+      .then((responseJSON) => {
+        console.log(responseJSON);
+        if (responseJSON.status == 'Success') {
+          console.log('absen checkout sukses');
+          this.setState({absent: true, loading_absent: false});
+          AsyncStorage.setItem(
+            'absen checkout',
+            JSON.stringify(this.state.absent),
+          ).catch((err) => console.log(err));
+        } else if (responseJSON.message == 'belom waktunya pulang bos') {
+          this.setState({loading_absent: false});
+          ToastAndroid.show('Belum waktunya pulang!', ToastAndroid.SHORT);
+        } else {
+          this.setState({absent: true, loading_absent: false});
+          AsyncStorage.setItem(
+            'absen checkout',
+            JSON.stringify(this.state.absent),
+          ).catch((err) => console.log(err));
+          console.log('sudah absen checkout');
+          this.absenCheckout();
+        }
       })
       .catch((err) => console.log(err));
   }
@@ -100,7 +227,6 @@ export default class Kasir extends Component {
       cancelable: true,
     });
   }
-
   failed() {
     Alert.alert(
       'Gagal',
@@ -113,11 +239,37 @@ export default class Kasir extends Component {
       {cancelable: true},
     );
   }
-
   error() {
     Alert.alert(
       'Gagal',
       'Periksa koneksi Anda!',
+      [
+        {
+          text: 'Ok',
+        },
+      ],
+      {cancelable: true},
+    );
+  }
+  absen() {
+    this.setState({loading_absen: false});
+    Alert.alert(
+      'Sudah',
+      'Anda sudah absen.',
+      [
+        {
+          text: 'Ok',
+        },
+      ],
+      {cancelable: true},
+    );
+  }
+
+  absenCheckout() {
+    this.setState({loading_absen: false});
+    Alert.alert(
+      'Sudah',
+      'Anda sudah absen. Istirahatlah.',
       [
         {
           text: 'Ok',
@@ -132,9 +284,13 @@ export default class Kasir extends Component {
     AsyncStorage.multiGet(['token', 'role'])
       .then((value) => {
         if (value[0][1] != null) {
-          AsyncStorage.multiRemove(['token', 'role']).catch((err) =>
-            console.log(err),
-          );
+          AsyncStorage.multiRemove([
+            'token',
+            'role',
+            'absen',
+            'absen checkout',
+            'status',
+          ]).catch((err) => console.log(err));
           console.log('data user dihapus');
           this.props.navigation.replace('Login');
         } else {
@@ -167,9 +323,60 @@ export default class Kasir extends Component {
             <TouchableNativeFeedback
               onPress={() => this.setState({modal: true})}>
               <View style={{...gaya.buttonAdd, marginBottom: 10}}>
-                <Text>+ Tambah Member</Text>
+                <Text>+ Daftarkan Member</Text>
               </View>
             </TouchableNativeFeedback>
+            <View>
+              <Text>Kehadiran</Text>
+              <TouchableNativeFeedback
+                disabled={this.state.absen}
+                onPress={() => this.checkin()}>
+                <View>
+                  {this.state.loading_absen ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <>
+                      {this.state.absen ? (
+                        <>
+                          {this.state.status == 2 ? (
+                            <Text>Anda Sudah Absen</Text>
+                          ) : (
+                            <>
+                              {this.state.status == 3 ? (
+                                <Text>Anda Sudah Absen (terlambat)</Text>
+                              ) : (
+                                <Text>Anda Alpha</Text>
+                              )}
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <Text>Check In</Text>
+                      )}
+                    </>
+                  )}
+                </View>
+              </TouchableNativeFeedback>
+            </View>
+            <View>
+              <TouchableNativeFeedback
+                disabled={this.state.absent}
+                onPress={() => this.checkout()}>
+                <View>
+                  {this.state.loading_absent ? (
+                    <ActivityIndicator color="white" size="small" />
+                  ) : (
+                    <>
+                      {this.state.absent ? (
+                        <Text>Selamat Istirahat</Text>
+                      ) : (
+                        <Text>Check Out</Text>
+                      )}
+                    </>
+                  )}
+                </View>
+              </TouchableNativeFeedback>
+            </View>
             <Modal
               visible={this.state.modal}
               transparent
