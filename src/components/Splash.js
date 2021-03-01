@@ -10,14 +10,16 @@ export class Splash extends Component {
         .then((value) => {
           if (value != null) {
             AsyncStorage.getItem('role').then((value) => {
-              if (value == '1') {
+              if (value == '2') {
                 this.props.navigation.replace('Pimpinan');
               } else if (value == '4') {
                 this.props.navigation.replace('Kasir');
               } else if (value == '3') {
                 this.props.navigation.replace('Staff');
-              } else {
+              } else if (value == '5') {
                 this.props.navigation.replace('Member');
+              } else {
+                this.props.navigation.replace('Login');
               }
             });
           } else {
