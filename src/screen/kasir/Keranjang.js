@@ -74,7 +74,7 @@ export default class Keranjang extends Component {
             tombol: false,
             refresh: false,
           });
-        } else if (responseJSON.status == null) {
+        } else if (responseJSON.status == 'Failed') {
           console.log('keranjang kosong');
           this.setState({
             loading: false,
@@ -86,7 +86,40 @@ export default class Keranjang extends Component {
       .catch((err) => this.fatal(err));
   }
 
+  inputHarga() {
+    console.log('mengirim uang yg dibayar..');
+    this.setState({confirm_loading: true, tombol: true});
+    const {dibayar} = this.state;
+    var kirimData = {dibayar: dibayar};
+    fetch(`https://amanah-mart.herokuapp.com/api/penjualan/bayar`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.state.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(kirimData),
+    })
+      .then((response) => response.json())
+      .then((responseJSON) => {
+        console.log(responseJSON);
+        if (responseJSON.status == 'Success') {
+          ToastAndroid.show(
+            `Kembalian: Rp.${responseJSON.data},-`,
+            ToastAndroid.LONG,
+          );
+          console.log('uang diterima. kembalian: Rp.', responseJSON.data, ',-');
+          this.confirmCart();
+        } else {
+          ToastAndroid.show('Uang yang dimasukan kurang!', ToastAndroid.SHORT);
+          this.setState({confirm_loading: false, tombol: false});
+          console.log('gagal. uang yg dibayar kurang?');
+        }
+      })
+      .catch((err) => console.log(err));
+  }
+
   updateQTY(id) {
+    ToastAndroid.show('Memperbarui QTY..', ToastAndroid.SHORT);
     console.log('memperbarui qty..');
     const {qty} = this.state;
     var data = {jumlah_product: qty};
@@ -105,13 +138,16 @@ export default class Keranjang extends Component {
           ToastAndroid.show('QTY telah diperbarui', ToastAndroid.SHORT);
           this.getKeranjang();
         } else {
+          ToastAndroid.show('QTY gagal diperbarui', ToastAndroid.SHORT);
           console.log('qty gagal diperbarui');
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => this.fatal(err));
   }
 
   deleteCart(id) {
+    ToastAndroid.show('Menghapus produk..', ToastAndroid.SHORT);
+    this.setState({tombol: true});
     console.log('mengapus produk..');
     fetch(`https://amanah-mart.herokuapp.com/api/penjualan/destroy/${id}`, {
       method: 'POST',
@@ -124,12 +160,16 @@ export default class Keranjang extends Component {
       .then((responseJSON) => {
         if (responseJSON.status == 'Success') {
           console.log('barang dihapus');
+          ToastAndroid.show('Produk dihapus', ToastAndroid.SHORT);
+          this.setState({tombol: false});
           this.getKeranjang();
         } else {
           console.log('barang gagal dihapus');
+          ToastAndroid.show('Gagal menghapus produk', ToastAndroid.SHORT);
+          this.setState({tombol: false});
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => this.fatal(err));
   }
 
   getDiskon() {
@@ -147,6 +187,7 @@ export default class Keranjang extends Component {
     })
       .then((response) => response.json())
       .then((responseJSON) => {
+        console.log(responseJSON);
         if (responseJSON.status == 'success') {
           console.log(
             'member mendapat diskon sebesar: ',
@@ -165,13 +206,13 @@ export default class Keranjang extends Component {
           console.log('diskon tidak didapat');
         }
       })
-      .catch((err) => alert(err));
+      .catch((err) => this.fatal(err));
   }
 
   confirmCart() {
     if (this.state.bayar_saldo == true) {
       this.setState({confirm_loading: true, tombol: true});
-      console.log('mengkonfirmasi tanpa saldo..');
+      console.log('mengkonfirmasi pakek saldo..');
       fetch(`https://amanah-mart.herokuapp.com/api/penjualan/confirmsaldo`, {
         method: 'POST',
         headers: {
@@ -184,6 +225,7 @@ export default class Keranjang extends Component {
           console.log(responseJSON);
           if (responseJSON.status == 'Success') {
             console.log('transaksi berhasil');
+            ToastAndroid.show('Transaksi berhasil', ToastAndroid.SHORT);
             this.setState({confirm_loading: false, tombol: false});
             this.getKeranjang();
           } else {
@@ -192,7 +234,7 @@ export default class Keranjang extends Component {
             console.log('transaksi gagal');
           }
         })
-        .catch((err) => console.log(err));
+        .catch((err) => this.fatal(err));
     } else {
       console.log('mengkonfirmasi tanpa saldo member..');
       this.setState({confirm_loading: true, tombol: true});
@@ -222,11 +264,17 @@ export default class Keranjang extends Component {
 
   fatal(err) {
     console.log(err);
-    // Alert.alert('Waktu Permintaan Habis', 'Periksa koneksi Anda', [
-    //   {text: 'Ulangi', onPress: () => this.getKeranjang()},
-    //   {text: 'OK'},
-    // ]);
-    this.setState({loading: false, refresh: false, daftar_keranjang: null});
+    Alert.alert('Waktu Permintaan Habis', 'Periksa koneksi Anda', [
+      {text: 'Ulangi', onPress: () => this.getKeranjang()},
+      {text: 'OK'},
+    ]);
+    this.setState({
+      loading: false,
+      refresh: false,
+      diskon_loading: false,
+      tombol: false,
+      confirm_loading: false,
+    });
   }
 
   render() {
@@ -262,10 +310,14 @@ export default class Keranjang extends Component {
             <View>
               <TouchableNativeFeedback
                 disabled={this.state.tombol}
-                onPress={() => this.confirmCart()}>
+                onPress={() =>
+                  this.state.bayar_saldo
+                    ? this.confirmCart()
+                    : this.inputHarga()
+                }>
                 <View style={{...styles.button, width: 125}}>
                   {this.state.confirm_loading ? (
-                    <Text>Tunggus..</Text>
+                    <Text>Tunggu..</Text>
                   ) : (
                     <Text>Konfirmasi</Text>
                   )}
@@ -375,6 +427,7 @@ export default class Keranjang extends Component {
                           </View>
                         </TouchableNativeFeedback>
                         <TouchableNativeFeedback
+                          disabled={this.state.tombol}
                           onPress={() => this.deleteCart(value.id)}>
                           <View
                             style={{
