@@ -100,17 +100,21 @@ export default class Produk extends Component {
                     <View style={{marginBottom: 10}}>
                       <Text>Nama Produk: {value.name}</Text>
                       <Text>Merek Produk: {value.merek}</Text>
-                      {value.supplier_id == 1 ? (
-                        <Text>PT. Indofood</Text>
-                      ) : (
-                        <>
-                          {value.supplier_id == 2 ? (
-                            <Text>PT. Siantar Top</Text>
-                          ) : (
-                            <Text>PT. CocaCola</Text>
-                          )}
-                        </>
-                      )}
+                      <Text>Stok Produk: {value.stock}</Text>
+                      <View style={{flexDirection: 'row'}}>
+                        <Text>Supplier: </Text>
+                        {value.supplier_id == 1 ? (
+                          <Text>PT. Indofood</Text>
+                        ) : (
+                          <>
+                            {value.supplier_id == 2 ? (
+                              <Text>PT. Siantar Top</Text>
+                            ) : (
+                              <Text>PT. CocaCola</Text>
+                            )}
+                          </>
+                        )}
+                      </View>
                       <Text>
                         Harga Jual: Rp {this.toPrice(value.harga_jual)},-
                       </Text>

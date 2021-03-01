@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Image,
+  ToastAndroid,
 } from 'react-native';
 
 export default class Pembelian extends Component {
@@ -52,6 +53,7 @@ export default class Pembelian extends Component {
   }
 
   confirmPembelian(barcode) {
+    ToastAndroid.show('Harap tunggu..', ToastAndroid.SHORT);
     console.log('membeli produk..');
     fetch(`https://amanah-mart.herokuapp.com/api/pembelian/${barcode}`, {
       method: 'POST',
@@ -63,6 +65,7 @@ export default class Pembelian extends Component {
       .then((response) => response.json())
       .then((responseJSON) => {
         console.log(responseJSON);
+        ToastAndroid.show('Produk ditambah keantrean', ToastAndroid.LONG);
       })
       .catch((err) => console.log(err));
   }
@@ -95,7 +98,7 @@ export default class Pembelian extends Component {
                     ) : (
                       <>
                         {value.supplier_id == 2 ? (
-                          <Text> Supplier: PT. Siantar Top</Text>
+                          <Text> Supplier: PT. Wings</Text>
                         ) : (
                           <Text> Supplier: PT. CocaCola</Text>
                         )}
