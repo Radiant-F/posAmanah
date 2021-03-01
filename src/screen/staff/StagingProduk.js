@@ -41,7 +41,6 @@ export default class StagingProduk extends Component {
       .then((value) => {
         if (value) {
           this.setState({token: value});
-          console.log(this.state.token);
           this.getPembelian();
         }
       })
@@ -73,6 +72,7 @@ export default class StagingProduk extends Component {
 
   updateProduk(id) {
     console.log('memperbarui produk..');
+    ToastAndroid.show('Memperbarui produk', ToastAndroid.SHORT);
     const {jumlah_product, harga, harga_jual} = this.state;
     var dataToSend = {
       jumlah_product: jumlah_product,
@@ -148,6 +148,7 @@ export default class StagingProduk extends Component {
     })
       .then((response) => response.json())
       .then((responseJSON) => {
+        ToastAndroid.show('Konfirmasi sukses', ToastAndroid.SHORT);
         this.setState({
           daftar_pembelian: responseJSON.data,
           refresh: false,
@@ -164,7 +165,7 @@ export default class StagingProduk extends Component {
 
   render() {
     return (
-      <View style={{flex: 1, padding: 10}}>
+      <View style={{flex: 1}}>
         <ScrollView
           refreshControl={
             <RefreshControl
@@ -187,7 +188,7 @@ export default class StagingProduk extends Component {
                 </View>
               ) : (
                 <TouchableNativeFeedback onPress={() => this.confirmProduk()}>
-                  <View style={styles.button}>
+                  <View style={{...styles.button}}>
                     <Text style={styles.text}>Konfirmasi Pembelian</Text>
                   </View>
                 </TouchableNativeFeedback>
@@ -282,7 +283,11 @@ export default class StagingProduk extends Component {
             transparent
             onRequestClose={() => this.setState({modal: false})}>
             <View
-              style={{justifyContent: 'center', alignItems: 'center', flex: 1}}>
+              style={{
+                justifyContent: 'center',
+                alignItems: 'center',
+                flex: 1,
+              }}>
               <View style={styles.viewModal}>
                 <Text>Masukan Stok</Text>
                 <TextInput
@@ -310,7 +315,6 @@ export default class StagingProduk extends Component {
               </View>
             </View>
           </Modal>
-          <Text> keranjang </Text>
         </ScrollView>
       </View>
     );
