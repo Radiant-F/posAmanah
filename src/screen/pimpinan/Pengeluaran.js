@@ -36,6 +36,7 @@ export default class Pengeluaran extends Component {
           console.log('data dimuat');
           this.setState({pengeluaran: responseJSON.data});
         } else {
+          this.setState({pengeluaran: null});
           console.log('data gagal diambil');
         }
       })
@@ -43,6 +44,7 @@ export default class Pengeluaran extends Component {
   }
 
   fatal(err) {
+    this.setState({pengeluaran: null});
     console.log(err);
     Alert.alert(
       'Waktu Permintaan Habis',
