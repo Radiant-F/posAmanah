@@ -193,13 +193,14 @@ export default class Keranjang extends Component {
             'member mendapat diskon sebesar: ',
             responseJSON.data.diskon,
             '%',
-            this.setState({
-              diskon_loading: false,
-              tombol: false,
-              diskon: responseJSON.data.diskon,
-            }),
-            this.getKeranjang(),
           );
+          this.diskonAlert(responseJSON.data.diskon);
+          this.setState({
+            diskon_loading: false,
+            tombol: false,
+            diskon: responseJSON.data.diskon,
+          });
+          this.getKeranjang();
         } else {
           this.setState({diskon_loading: false, tombol: false});
           ToastAndroid.show('Member ID tidak ditemukan', ToastAndroid.LONG);
@@ -247,6 +248,7 @@ export default class Keranjang extends Component {
       })
         .then((response) => response.json())
         .then((responseJSON) => {
+          console.log(responseJSON);
           if (responseJSON.status == 'Success') {
             console.log('transaksi berhasil');
             ToastAndroid.show('Transaksi berhasil', ToastAndroid.SHORT);
@@ -254,7 +256,7 @@ export default class Keranjang extends Component {
             this.getKeranjang();
           } else {
             this.setState({confirm_loading: false, tombol: false});
-            ToastAndroid.show('Transaksi gagal', ToastAndroid.SHORT);
+            ToastAndroid.show('Barang melebihi stok!', ToastAndroid.SHORT);
             console.log('transaksi gagal');
           }
         })
@@ -275,6 +277,12 @@ export default class Keranjang extends Component {
       tombol: false,
       confirm_loading: false,
     });
+  }
+
+  diskonAlert(diskon) {
+    Alert.alert('Selamat!', `Member mendapat diskon sebesar ${diskon}%`, [
+      {text: 'OK'},
+    ]);
   }
 
   render() {
@@ -369,10 +377,26 @@ export default class Keranjang extends Component {
           </View>
           <View style={{margin: 5, marginBottom: 5}}>
             {this.state.diskon == 0 ? (
-              <Text>Total harga: {this.state.detail.jumlah_harga}</Text>
+              <View style={{...gaya.viewDaftar}}>
+                <Text style={{fontSize: 20, includeFontPadding: false}}>
+                  Total harga:{' '}
+                  <Text style={{fontWeight: 'bold'}}>
+                    Rp {this.toPrice(this.state.detail.jumlah_harga)}
+                    ,-
+                  </Text>
+                </Text>
+              </View>
             ) : (
               <View>
-                <Text>Total harga: {this.state.detail.jumlah_harga}</Text>
+                <View style={{...gaya.viewDaftar}}>
+                  <Text style={{fontSize: 20, includeFontPadding: false}}>
+                    Total harga:{' '}
+                    <Text style={{fontWeight: 'bold'}}>
+                      Rp {this.toPrice(this.state.detail.jumlah_harga)}
+                      ,-
+                    </Text>
+                  </Text>
+                </View>
                 <Text>Diskon: {this.state.detail.diskon}%</Text>
               </View>
             )}
@@ -401,19 +425,28 @@ export default class Keranjang extends Component {
                       </View>
                       <View>
                         <View style={gaya.tombolQTY}>
-                          <TouchableNativeFeedback>
+                          <TouchableNativeFeedback
+                            onPress={() =>
+                              this.setState({qty: this.state.qty - 1})
+                            }>
                             <View style={gaya.addQTY}>
                               <Text>-</Text>
                             </View>
                           </TouchableNativeFeedback>
                           <TextInput
+                            maxLength={5}
+                            value={this.state.qty}
+                            keyboardType="decimal-pad"
                             placeholder="e.g 200"
                             underlineColorAndroid="orange"
                             onChangeText={(input) =>
                               this.setState({qty: input})
                             }
                           />
-                          <TouchableNativeFeedback>
+                          <TouchableNativeFeedback
+                            onPress={() =>
+                              this.setState({qty: this.state.qty + 1})
+                            }>
                             <View
                               style={{...gaya.addQTY, backgroundColor: 'lime'}}>
                               <Text>+</Text>
