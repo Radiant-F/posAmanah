@@ -16,6 +16,7 @@ import {
   ToastAndroid,
   ActivityIndicator,
 } from 'react-native';
+import ImagePicker from 'react-native-image-picker';
 import {styles} from '../member/Member';
 import {Picker} from '@react-native-picker/picker';
 import _ from 'lodash';
@@ -41,14 +42,19 @@ export default class AddProduct extends Component {
       sup_name: '',
       sup_phone_number: 0,
       sup_address: '',
+      out_keterangan: '',
+      out_kredit: 0,
       daftar_kategori: [],
       daftar_supplier: [],
       daftar_barang: [],
-      // token: this.getToken(),
+      token: this.getToken(),
       modal: false,
-      modalOption: true,
+      modalOption: false,
       modalSupplier: false,
       modalEditSupplier: false,
+      modalOut: false,
+      modalCat: false,
+      editCat: false,
       loading: false,
       tombol: false,
       edited: false,
@@ -65,8 +71,7 @@ export default class AddProduct extends Component {
       .then((value) => {
         if (value) {
           this.setState({token: value});
-          console.log(this.state.token);
-          this.getSupplier();
+          this.getUser();
         }
       })
       .catch((err) => console.log(err));
@@ -74,6 +79,7 @@ export default class AddProduct extends Component {
 
   getUser() {
     console.log('mengambil data..');
+    this.setState({tombol: true});
     fetch(`https://amanah-mart.herokuapp.com/api/karyawan`, {
       method: 'GET',
       headers: {
@@ -85,15 +91,17 @@ export default class AddProduct extends Component {
       .then((responseJSON) => {
         if (responseJSON.status == 'Success') {
           this.setState({
-            name: responseJSON.data[0].user.name,
-            umur: JSON.stringify(responseJSON.data[0].umur),
-            phone_number: JSON.stringify(responseJSON.data[0].phone_number),
-            email: responseJSON.data[0].user.email,
-            address: responseJSON.data[0].address,
-            image: responseJSON.data[0].image,
+            name: responseJSON.data.User.name,
+            umur: JSON.stringify(responseJSON.data.Karyawan.umur),
+            phone_number: JSON.stringify(
+              responseJSON.data.Karyawan.phone_number,
+            ),
+            email: responseJSON.data.User.email,
+            address: responseJSON.data.Karyawan.address,
+            image: responseJSON.data.Karyawan.image,
           });
-          console.log(this.state.data_member);
           console.log('data dimuat');
+          this.getSupplier();
         } else {
           console.log('data gagal dimuat');
         }
@@ -113,7 +121,7 @@ export default class AddProduct extends Component {
         umur: umur,
         address: address,
       };
-      fetch(`https://amanah-mart.herokuapp.com/api/member/update`, {
+      fetch(`https://amanah-mart.herokuapp.com/api/karyawan/update`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${this.state.token}`,
@@ -125,12 +133,12 @@ export default class AddProduct extends Component {
           if (responseJSON.status == 'Success') {
             console.log('profil diperbarui');
             ToastAndroid.show('Profil diperbarui', ToastAndroid.SHORT);
-            this.setState({tombol_profil: false});
+            this.setState({tombol_profil: false, edited: false});
             this.getUser();
           } else {
             console.log('profil gagal diperbarui');
             ToastAndroid.show('Harap Coba Lagi', ToastAndroid.SHORT);
-            this.setState({tombol_profil: false});
+            this.setState({tombol_profil: false, edited: false});
           }
         })
         .catch((err) => this.fatal(err));
@@ -247,6 +255,46 @@ export default class AddProduct extends Component {
     }
   }
 
+  addPengeluaran() {
+    if (this.state.out_keterangan != '' && this.state.out_kredit != 0) {
+      console.log('menambah pengeluaran..');
+      this.setState({tombol: true});
+      const {out_keterangan, out_kredit} = this.state;
+      var kirimData = {
+        keterangan: out_keterangan,
+        kredit: out_kredit,
+      };
+      fetch(`https://amanah-mart.herokuapp.com/api/pengeluaran`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(kirimData),
+      })
+        .then((response) => response.json())
+        .then((responseJSON) => {
+          console.log(responseJSON);
+          if (responseJSON.status == 'Success') {
+            console.log('pengeluaran ditambah');
+            this.setState({tombol: false});
+            ToastAndroid.show(
+              'Pengeluaran berhasil ditambah',
+              ToastAndroid.SHORT,
+            );
+            this.getSupplier();
+          } else {
+            console.log('pengeluaran gagal ditambah');
+            this.setState({tombol: false});
+            ToastAndroid.show('Pengeluaran gagal ditambah', ToastAndroid.SHORT);
+          }
+        })
+        .catch((err) => this.error(err));
+    } else {
+      ToastAndroid.show('Isi yang benar', ToastAndroid.SHORT);
+    }
+  }
+
   getSupplier() {
     console.log('mengambil supplier..');
     this.setState({daftar_supplier: []});
@@ -259,11 +307,14 @@ export default class AddProduct extends Component {
     })
       .then((response) => response.json())
       .then((responseJSON) => {
-        this.setState({daftar_supplier: responseJSON.data});
+        this.setState({
+          daftar_supplier: responseJSON.data,
+          supplier_id: responseJSON.data[0].id,
+        });
         console.log('supplier termuat.');
         this.getCategory();
       })
-      .catch((err) => console.log(err));
+      .catch((err) => this.error(err));
   }
 
   editSupplier() {
@@ -272,7 +323,11 @@ export default class AddProduct extends Component {
       this.state.sup_name != '' &&
       this.state.sup_phone_number != 0
     ) {
-      console.log('memperbarui supplier..');
+      console.log(
+        'memperbarui supplier dengan id: ',
+        this.state.supplier_id,
+        '..',
+      );
       this.setState({tombol: true});
       const {sup_name, sup_address, sup_phone_number} = this.state;
       var kirimData = {
@@ -294,7 +349,7 @@ export default class AddProduct extends Component {
         .then((response) => response.json())
         .then((responseJSON) => {
           if (responseJSON.status == 'Success') {
-            console.log('supplier ditambah');
+            console.log('supplier diperbarui');
             this.setState({tombol: false});
             ToastAndroid.show(
               'Supplier berhasil diperbarui',
@@ -302,7 +357,7 @@ export default class AddProduct extends Component {
             );
             this.getSupplier();
           } else {
-            console.log('supplier gagal ditambah');
+            console.log('supplier gagal diperbarui');
             this.setState({tombol: false});
             ToastAndroid.show('Supplier gagal diperbarui', ToastAndroid.SHORT);
           }
@@ -344,6 +399,7 @@ export default class AddProduct extends Component {
 
   getCategory() {
     console.log('memuat kategori..');
+    this.setState({tombol: true});
     fetch(`https://amanah-mart.herokuapp.com/api/category`, {
       method: 'GET',
       headers: {
@@ -353,10 +409,110 @@ export default class AddProduct extends Component {
     })
       .then((response) => response.json())
       .then((responseJSON) => {
-        this.setState({daftar_kategori: responseJSON.data});
+        this.setState({daftar_kategori: responseJSON.data, tombol: false});
         console.log('kategori termuat.');
       })
-      .catch((err) => console.log(err));
+      .catch((err) => this.error(err));
+  }
+
+  addCategory() {
+    if (this.state.name != '') {
+      console.log('menambah kategori..');
+      this.setState({tombol: true});
+      const {name} = this.state;
+      var kirimData = {
+        name: name,
+      };
+      fetch(`https://amanah-mart.herokuapp.com/api/category`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(kirimData),
+      })
+        .then((response) => response.json())
+        .then((responseJSON) => {
+          console.log(responseJSON);
+          if (responseJSON.status == 'Success') {
+            console.log('kategori ditambah');
+            this.setState({tombol: false});
+            ToastAndroid.show('Kategori telah ditambah', ToastAndroid.SHORT);
+            this.getCategory();
+          } else {
+            console.log('kategori gagal ditambah');
+            this.setState({tombol: false});
+            ToastAndroid.show('Mohon periksa koneksi Anda', ToastAndroid.SHORT);
+          }
+        })
+        .catch((err) => this.error(err));
+    } else {
+      ToastAndroid.show('Isi yang benar', ToastAndroid.SHORT);
+    }
+  }
+
+  editCategory() {
+    if (this.state.name != '') {
+      console.log('memperbarui kategori..');
+      this.setState({tombol: true});
+      const {name} = this.state;
+      var kirimData = {
+        name: name,
+      };
+      fetch(
+        `https://amanah-mart.herokuapp.com/api/category/${this.state.category_id}`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.state.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(kirimData),
+        },
+      )
+        .then((response) => response.json())
+        .then((responseJSON) => {
+          console.log(responseJSON);
+          if (responseJSON.status == 'Success') {
+            console.log('kategori diperbarui');
+            this.setState({tombol: false});
+            ToastAndroid.show('Kategori telah diperbarui', ToastAndroid.SHORT);
+            this.getCategory();
+          } else {
+            console.log('kategori gagal diperbarui');
+            this.setState({tombol: false});
+            ToastAndroid.show('Mohon periksa koneksi Anda', ToastAndroid.SHORT);
+          }
+        })
+        .catch((err) => this.error(err));
+    } else {
+      ToastAndroid.show('Isi yang benar', ToastAndroid.SHORT);
+    }
+  }
+
+  deleteCategory() {
+    console.log('menghapus kategori..');
+    fetch(
+      `https://amanah-mart.herokuapp.com/api/category/delete/${this.state.category_id}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.state.token}`,
+        },
+      },
+    )
+      .then((response) => response.json())
+      .then((responseJSON) => {
+        if (responseJSON.status == 'Success') {
+          console.log('kategori dihapus');
+          ToastAndroid.show('Kategori berhasil dihapus', ToastAndroid.SHORT);
+        } else {
+          console.log('kategori gagal dihapus');
+          ToastAndroid.show('Mohon periksa koneksi Anda', ToastAndroid.SHORT);
+        }
+      })
+      .catch((err) => this.error(err));
   }
 
   error(err) {
@@ -421,18 +577,165 @@ export default class AddProduct extends Component {
             <View
               style={{flexDirection: 'row', justifyContent: 'space-evenly'}}>
               <TouchableNativeFeedback
-                onPress={() => this.setState({modal: true})}>
-                <View style={{...gaya.buttonAdd, marginBottom: 10}}>
-                  <Text>+ Pesan Produk</Text>
-                </View>
-              </TouchableNativeFeedback>
-              <TouchableNativeFeedback
                 onPress={() => this.setState({modalSupplier: true})}>
                 <View style={{...gaya.buttonAdd, marginBottom: 10}}>
                   <Text>+ Daftarkan Supplier</Text>
                 </View>
               </TouchableNativeFeedback>
+              <TouchableNativeFeedback
+                onPress={() => this.setState({modal: true})}>
+                <View style={{...gaya.buttonAdd, marginBottom: 10}}>
+                  <Text>+ Pesan Produk</Text>
+                </View>
+              </TouchableNativeFeedback>
             </View>
+            <View
+              style={{flexDirection: 'row', justifyContent: 'space-evenly'}}>
+              <TouchableNativeFeedback
+                onPress={() => this.setState({modalOut: true})}>
+                <View style={{...gaya.buttonAdd, marginBottom: 10}}>
+                  <Text>+ Tambah Pengeluaran</Text>
+                </View>
+              </TouchableNativeFeedback>
+              <TouchableNativeFeedback
+                onPress={() => this.setState({modalCat: true})}>
+                <View style={{...gaya.buttonAdd, marginBottom: 10}}>
+                  <Text>+ Tambah Kategori</Text>
+                </View>
+              </TouchableNativeFeedback>
+            </View>
+            <Modal
+              visible={this.state.modalCat}
+              transparent
+              onRequestClose={() => this.setState({modalCat: false})}
+              animationType="fade">
+              <View style={gaya.mainViewModal}>
+                <View style={{...styles.modal, alignItems: 'center'}}>
+                  <View style={gaya.headerModal}>
+                    <Image
+                      source={require('../../assets/round-account-button-with-user-inside.png')}
+                      style={styles.imgClose}
+                    />
+                    <Text>Pengaturan Kategori</Text>
+                    <TouchableOpacity
+                      onPress={() => this.setState({modalCat: false})}>
+                      <Image
+                        source={require('../../assets/close-button.png')}
+                        style={styles.imgClose}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {this.state.editCat ? (
+                    <View style={{width: '95%', marginTop: 10}}>
+                      <Text> Pilih Kategori</Text>
+                      <View
+                        style={{flexDirection: 'row', alignItems: 'center'}}>
+                        <Picker
+                          style={{flex: 1, marginRight: 15}}
+                          mode="dropdown"
+                          selectedValue={this.state.category_id}
+                          onValueChange={(id) =>
+                            this.setState({category_id: id})
+                          }>
+                          {this.state.daftar_kategori.map((value, index) => (
+                            <Picker.Item
+                              key={index}
+                              label={value.name}
+                              value={value.id}
+                            />
+                          ))}
+                        </Picker>
+                        <TouchableOpacity
+                          disabled={this.state.tombol}
+                          onPress={() => this.deleteCategory()}>
+                          <Image
+                            source={require('../../assets/rubbish-bin-delete-button.png')}
+                            style={{...styles.imgClose, tintColor: 'red'}}
+                          />
+                        </TouchableOpacity>
+                      </View>
+                      <Text> Ubah Nama Kategori</Text>
+                      <TextInput
+                        selectTextOnFocus
+                        placeholder="Nama Kategori"
+                        onChangeText={(input) => this.setState({name: input})}
+                        underlineColorAndroid="orange"
+                      />
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-evenly',
+                        }}>
+                        <TouchableNativeFeedback
+                          onPress={() =>
+                            this.setState({editCat: !this.state.editCat})
+                          }>
+                          <View
+                            style={{
+                              ...styles.button,
+                              backgroundColor: 'orange',
+                            }}>
+                            <Text style={styles.text}>Kembali</Text>
+                          </View>
+                        </TouchableNativeFeedback>
+                        <TouchableNativeFeedback
+                          disabled={this.state.tombol}
+                          onPress={() => this.editCategory()}>
+                          <View
+                            style={{...styles.button, backgroundColor: 'lime'}}>
+                            {this.state.tombol ? (
+                              <Text style={styles.text}>Tunggu..</Text>
+                            ) : (
+                              <Text style={styles.text}>Perbarui</Text>
+                            )}
+                          </View>
+                        </TouchableNativeFeedback>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={{width: '95%', marginTop: 10}}>
+                      <Text> Nama Kategori</Text>
+                      <TextInput
+                        selectTextOnFocus
+                        placeholder="Nama Kategori"
+                        onChangeText={(input) => this.setState({name: input})}
+                        underlineColorAndroid="orange"
+                      />
+                      <View
+                        style={{
+                          flexDirection: 'row',
+                          justifyContent: 'space-evenly',
+                        }}>
+                        <TouchableNativeFeedback
+                          onPress={() =>
+                            this.setState({editCat: !this.state.editCat})
+                          }>
+                          <View
+                            style={{
+                              ...styles.button,
+                              backgroundColor: 'orange',
+                            }}>
+                            <Text style={styles.text}>Edit</Text>
+                          </View>
+                        </TouchableNativeFeedback>
+                        <TouchableNativeFeedback
+                          disabled={this.state.tombol}
+                          onPress={() => this.addCategory()}>
+                          <View
+                            style={{...styles.button, backgroundColor: 'lime'}}>
+                            {this.state.tombol ? (
+                              <Text style={styles.text}>Tunggu..</Text>
+                            ) : (
+                              <Text style={styles.text}>Tambah</Text>
+                            )}
+                          </View>
+                        </TouchableNativeFeedback>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              </View>
+            </Modal>
             <Modal
               visible={this.state.modalEditSupplier}
               transparent
@@ -907,9 +1210,63 @@ export default class AddProduct extends Component {
                 </View>
               </View>
             </Modal>
+            <Modal
+              visible={this.state.modalOut}
+              transparent
+              onRequestClose={() => this.setState({modalOut: false})}
+              animationType="fade">
+              <View style={gaya.mainViewModal}>
+                <View style={{...styles.modal, alignItems: 'center'}}>
+                  <View style={gaya.headerModal}>
+                    <Image
+                      source={require('../../assets/round-account-button-with-user-inside.png')}
+                      style={styles.imgClose}
+                    />
+                    <Text>Tambah Pengeluaran</Text>
+                    <TouchableOpacity
+                      onPress={() => this.setState({modalOut: false})}>
+                      <Image
+                        source={require('../../assets/close-button.png')}
+                        style={styles.imgClose}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={{width: '95%'}}>
+                    <Text> Keterangan</Text>
+                    <TextInput
+                      placeholder="Keterangan"
+                      underlineColorAndroid="orange"
+                      onChangeText={(input) =>
+                        this.setState({out_keterangan: input})
+                      }
+                    />
+                    <Text> Kredit</Text>
+                    <TextInput
+                      underlineColorAndroid="orange"
+                      keyboardType="decimal-pad"
+                      placeholder="Kredit"
+                      onChangeText={(input) =>
+                        this.setState({out_kredit: input})
+                      }
+                    />
+                  </View>
+                  <TouchableNativeFeedback
+                    disabled={this.state.tombol}
+                    onPress={() => this.addPengeluaran()}>
+                    <View style={{...styles.button, backgroundColor: 'lime'}}>
+                      {this.state.tombol ? (
+                        <Text style={styles.text}>Tunggu..</Text>
+                      ) : (
+                        <Text style={styles.text}>Tambah</Text>
+                      )}
+                    </View>
+                  </TouchableNativeFeedback>
+                </View>
+              </View>
+            </Modal>
           </View>
         </ImageBackground>
-        {/* <TopTab /> */}
+        <TopTab />
       </View>
     );
   }
