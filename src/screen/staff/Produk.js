@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   RefreshControl,
+  StyleSheet,
 } from 'react-native';
 import _ from 'lodash';
 
@@ -97,7 +98,7 @@ export default class Produk extends Component {
                         data: value,
                       })
                     }>
-                    <View style={{marginBottom: 10}}>
+                    <View style={styles.mainView}>
                       <Text>Nama Produk: {value.name}</Text>
                       <Text>Merek Produk: {value.merek}</Text>
                       <Text>Stok Produk: {value.stock}</Text>
@@ -132,3 +133,13 @@ export default class Produk extends Component {
     );
   }
 }
+
+const styles = StyleSheet.create({
+  mainView: {
+    padding: 10,
+    elevation: 3,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+});
