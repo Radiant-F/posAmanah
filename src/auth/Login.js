@@ -165,7 +165,8 @@ export class Login extends Component {
     }
   };
 
-  failed() {
+  failed(err) {
+    console.log(err);
     this.setState({loading: false});
     Alert.alert(
       'Data tidak ditemukan',
