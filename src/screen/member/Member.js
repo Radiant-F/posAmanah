@@ -155,6 +155,8 @@ export default class Member extends Component {
 
   topUp() {
     if (this.state.topup >= 10000) {
+      ToastAndroid.show('Mengkonfirmasi pembayaran..', ToastAndroid.SHORT);
+      this.setState({tombol: true});
       console.log('mentopup..');
       const {topup} = this.state;
       var data = {topup: topup};
@@ -173,14 +175,16 @@ export default class Member extends Component {
         .then((responseJSON) => {
           if (responseJSON.status == 'Success') {
             console.log('topup sukses');
+            this.setState({tombol: false});
             this.success();
             this.getUser();
           } else {
             ToastAndroid.show('Periksa koneksi Anda', ToastAndroid.LONG);
+            this.setState({tombol: false});
             console.log('topup gagal');
           }
         })
-        .catch((err) => console.log(err));
+        .catch((err) => this.fatal(err));
     } else {
       ToastAndroid.show('Nominal minimal adalah 10rb', ToastAndroid.LONG);
     }
@@ -212,7 +216,7 @@ export default class Member extends Component {
 
   fatal(err) {
     console.log(err);
-    this.setState({tombol_profil: false});
+    this.setState({tombol_profil: false, tombol: false});
     Alert.alert(
       'Koneksi Tidak Stabil',
       'Coba lagi beberapa saat.',
