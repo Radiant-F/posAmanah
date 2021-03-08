@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-community/async-storage';
 import React, {Component} from 'react';
 import ImagePicker from 'react-native-image-picker';
 import TopTab from '../../router/TopTabPimpinan';
+import _ from 'lodash';
 import {
   ImageBackground,
   Text,
@@ -26,6 +27,7 @@ export default class Pimpinan extends Component {
     this.state = {
       keuangan: [],
       laporan_bulan: '',
+      laporan_harian: '',
       pengeluaran: '',
       name: '',
       email: '',
@@ -33,27 +35,35 @@ export default class Pimpinan extends Component {
       umur: '',
       address: '',
       image: '',
-      photo: null,
+      photo: '',
+      view_laporan: false,
       tombol_profil: false,
+      edited: false,
       modal: false,
-      awal: '2021-02-24',
-      akhir: '2021-02-25',
+      awal: '0000-00-00',
+      akhir: '0000-00-00',
       token: this.getToken(),
     };
+  }
+
+  toPrice(price) {
+    return _.replace(price, /\B(?=(\d{3})+(?!\d))/g, '.');
   }
 
   getToken() {
     AsyncStorage.getItem('token')
       .then((value) => {
         this.setState({token: value});
+        this.getLaporanHarian();
         this.getLaporanPerbulan();
+        this.getUser();
       })
       .catch((err) => console.log(err));
   }
 
   getUser() {
     console.log('memuat data user..');
-    fetch(`https://amanah-mart.herokuapp.com/api/me`, {
+    fetch(`https://amanah-mart.herokuapp.com/api/karyawan`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${this.state.token}`,
@@ -62,8 +72,17 @@ export default class Pimpinan extends Component {
     })
       .then((response) => response.json())
       .then((responseJSON) => {
-        console.log(responseJSON);
         if (responseJSON.status == 'Success') {
+          this.setState({
+            name: responseJSON.data.User.name,
+            umur: JSON.stringify(responseJSON.data.Karyawan.umur),
+            phone_number: JSON.stringify(
+              responseJSON.data.Karyawan.phone_number,
+            ),
+            email: responseJSON.data.User.email,
+            address: responseJSON.data.Karyawan.address,
+            image: responseJSON.data.Karyawan.image,
+          });
           console.log('data user dimuat');
         } else {
           console.log('data user gagal dimuat');
@@ -73,38 +92,42 @@ export default class Pimpinan extends Component {
   }
 
   updateProfil() {
-    console.log('memperbarui profil..');
-    ToastAndroid.show('Memperbarui profil.. Harap tunggu', ToastAndroid.SHORT);
-    this.setState({tombol_profil: true});
-    const {name, email, phone_number, umur, address} = this.state;
-    var kirimData = {
-      name: name,
-      email: email,
-      phone_number: phone_number,
-      umur: umur,
-      address: address,
-    };
-    fetch(`https://amanah-mart.herokuapp.com/api/member/update`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${this.state.token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(kirimData),
-    })
-      .then((response) => response.json())
-      .then((responseJSON) => {
-        if (responseJSON.status == 'Success') {
-          console.log('profil diperbarui');
-          ToastAndroid.show('Profil diperbarui', ToastAndroid.SHORT);
-          this.setState({tombol_profil: false});
-        } else {
-          console.log('profil gagal diperbarui');
-          ToastAndroid.show('Foto harus diperbarui', ToastAndroid.SHORT);
-          this.setState({tombol_profil: false});
-        }
+    if (this.state.edited != false) {
+      const {name, email, phone_number, umur, address, photo} = this.state;
+      console.log('memperbarui profil..');
+      this.setState({tombol_profil: true});
+      var kirimData = {
+        name: name,
+        email: email,
+        phone_number: phone_number,
+        umur: umur,
+        address: address,
+      };
+      fetch(`https://amanah-mart.herokuapp.com/api/karyawan/update`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${this.state.token}`,
+        },
+        body: this.createFormData(photo, kirimData),
       })
-      .catch((err) => console.log(err));
+        .then((response) => response.json())
+        .then((responseJSON) => {
+          if (responseJSON.status == 'Success') {
+            console.log('profil diperbarui');
+            ToastAndroid.show('Profil diperbarui', ToastAndroid.SHORT);
+            this.setState({tombol_profil: false, edited: false});
+            this.getUser();
+          } else {
+            console.log('profil gagal diperbarui');
+            ToastAndroid.show('Kesalahan koneksi..', ToastAndroid.SHORT);
+            this.setState({tombol_profil: false, edited: false});
+          }
+        })
+        .catch((err) => this.fatal(err));
+    } else {
+      ToastAndroid.show('Foto harus diperbarui', ToastAndroid.SHORT);
+      console.log('error');
+    }
   }
 
   createFormData = (photo, body) => {
@@ -129,7 +152,7 @@ export default class Pimpinan extends Component {
     };
     ImagePicker.showImagePicker(options, (response) => {
       if (response.uri) {
-        this.setState({photo: response});
+        this.setState({photo: response, edited: true});
         console.log(JSON.stringify(response.fileName));
       }
     });
@@ -197,9 +220,9 @@ export default class Pimpinan extends Component {
       .catch((err) => console.log(err));
   }
 
-  getPengeluaran() {
-    console.log('memuat data pengeluaran..');
-    fetch(`https://amanah-mart.herokuapp.com/api/pengeluaran`, {
+  getLaporanHarian() {
+    console.log('memuat data laporan hari ini..');
+    fetch(`https://amanah-mart.herokuapp.com/api/harian`, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${this.state.token}`,
@@ -208,9 +231,15 @@ export default class Pimpinan extends Component {
     })
       .then((response) => response.json())
       .then((responseJSON) => {
-        console.log(responseJSON);
+        if (responseJSON.status == 'Success') {
+          this.setState({laporan_harian: responseJSON.data});
+          console.log(this.state.laporan_harian);
+          console.log('data harian dimuat');
+        } else {
+          console.log('data harian gagal dimuat');
+        }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => this.fatal(err));
   }
 
   logout() {
@@ -236,7 +265,7 @@ export default class Pimpinan extends Component {
     Alert.alert(
       'Waktu Permintaan Habis',
       'Harap periksa koneksi Anda lalu coba lagi.',
-      [{text: 'Ok'}, {text: 'Ulangi', onPress: () => this.getUser()}],
+      [{text: 'Ok'}, {text: 'Ulangi', onPress: () => this.getToken()}],
       {cancelable: true},
     );
     this.setState({tombol_profil: false});
@@ -254,7 +283,10 @@ export default class Pimpinan extends Component {
                   style={styles.imgIcon}
                 />
               ) : (
-                <Image source={this.state.image.uri} style={styles.imgIcon} />
+                <Image
+                  source={{uri: this.state.image}}
+                  style={styles.imgIcon}
+                />
               )}
               <Text style={{color: 'white'}}>Amanah Mart</Text>
               <TouchableWithoutFeedback
@@ -265,60 +297,153 @@ export default class Pimpinan extends Component {
                 />
               </TouchableWithoutFeedback>
             </View>
-            <View style={gaya.viewMoney}>
-              <View>
-                <View
-                  style={{
-                    ...gaya.viewDebitKredit,
-                    marginBottom: 10,
-                    alignItems: 'center',
-                  }}>
-                  <Text>Laporan Bulan Ini</Text>
+            {this.state.view_laporan ? (
+              <View style={gaya.viewMoney}>
+                <View>
+                  <TouchableNativeFeedback
+                    onPress={() =>
+                      this.setState({view_laporan: !this.state.view_laporan})
+                    }>
+                    <View
+                      style={{
+                        ...gaya.viewDebitKredit,
+                        marginBottom: 10,
+                        alignItems: 'center',
+                      }}>
+                      {this.state.view_laporan ? (
+                        <Text>Laporan Bulan Ini</Text>
+                      ) : (
+                        <Text>Laporan Hari Ini</Text>
+                      )}
+                    </View>
+                  </TouchableNativeFeedback>
+                  <View style={gaya.viewSaldo}>
+                    <Text>Saldo:</Text>
+                    {this.state.laporan_bulan == '' ? (
+                      <ActivityIndicator size="small" color="lime" />
+                    ) : (
+                      <Text style={gaya.textMoney}>
+                        Rp {this.toPrice(this.state.laporan_bulan.saldo.saldo)}
+                        ,-
+                      </Text>
+                    )}
+                  </View>
                 </View>
-                <View style={gaya.viewSaldo}>
-                  <Text>Saldo:</Text>
-                  {this.state.laporan_bulan == '' ? (
-                    <ActivityIndicator size="small" color="lime" />
-                  ) : (
-                    <Text style={gaya.textMoney}>
-                      Rp {this.state.laporan_bulan.saldo.saldo},-
-                    </Text>
-                  )}
+                <View>
+                  <View style={gaya.viewDebitKredit}>
+                    {this.state.laporan_bulan == '' ? (
+                      <ActivityIndicator size="small" color="lime" />
+                    ) : (
+                      <Text>
+                        Penjualan: Rp{' '}
+                        {this.toPrice(
+                          this.state.laporan_bulan.jumlah_penjualan,
+                        )}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={{margin: 5}}></View>
+                  <View style={gaya.viewDebitKredit}>
+                    {this.state.laporan_bulan == '' ? (
+                      <ActivityIndicator size="small" color="lime" />
+                    ) : (
+                      <Text>
+                        Pembelian: Rp{' '}
+                        {this.toPrice(
+                          this.state.laporan_bulan.jumlah_pembelian,
+                        )}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={{margin: 5}}></View>
+                  <View style={gaya.viewDebitKredit}>
+                    {this.state.laporan_bulan == '' ? (
+                      <ActivityIndicator size="small" color="lime" />
+                    ) : (
+                      <Text>
+                        Pengeluaran: Rp{' '}
+                        {this.toPrice(
+                          this.state.laporan_bulan.jumlah_pengeluaran,
+                        )}
+                      </Text>
+                    )}
+                  </View>
                 </View>
               </View>
-              <View>
-                <View style={gaya.viewDebitKredit}>
-                  {this.state.laporan_bulan == '' ? (
-                    <ActivityIndicator size="small" color="lime" />
-                  ) : (
-                    <Text>
-                      Penjualan: Rp {this.state.laporan_bulan.jumlah_penjualan}
-                    </Text>
-                  )}
+            ) : (
+              <View style={gaya.viewMoney}>
+                <View>
+                  <TouchableNativeFeedback
+                    onPress={() =>
+                      this.setState({view_laporan: !this.state.view_laporan})
+                    }>
+                    <View
+                      style={{
+                        ...gaya.viewDebitKredit,
+                        marginBottom: 10,
+                        alignItems: 'center',
+                      }}>
+                      {this.state.view_laporan ? (
+                        <Text>Laporan Bulan Ini</Text>
+                      ) : (
+                        <Text>Laporan Hari Ini</Text>
+                      )}
+                    </View>
+                  </TouchableNativeFeedback>
+                  <View style={gaya.viewSaldo}>
+                    <Text>Saldo:</Text>
+                    {this.state.laporan_harian == '' ? (
+                      <ActivityIndicator size="small" color="lime" />
+                    ) : (
+                      <Text style={gaya.textMoney}>
+                        Rp {this.toPrice(this.state.laporan_harian.saldo.saldo)}
+                        ,-
+                      </Text>
+                    )}
+                  </View>
                 </View>
-                <View style={{margin: 5}}></View>
-                <View style={gaya.viewDebitKredit}>
-                  {this.state.laporan_bulan == '' ? (
-                    <ActivityIndicator size="small" color="lime" />
-                  ) : (
-                    <Text>
-                      Pembelian: Rp {this.state.laporan_bulan.jumlah_pembelian}
-                    </Text>
-                  )}
-                </View>
-                <View style={{margin: 5}}></View>
-                <View style={gaya.viewDebitKredit}>
-                  {this.state.laporan_bulan == '' ? (
-                    <ActivityIndicator size="small" color="lime" />
-                  ) : (
-                    <Text>
-                      Pengeluaran: Rp{' '}
-                      {this.state.laporan_bulan.jumlah_pengeluaran}
-                    </Text>
-                  )}
+                <View>
+                  <View style={gaya.viewDebitKredit}>
+                    {this.state.laporan_harian == '' ? (
+                      <ActivityIndicator size="small" color="lime" />
+                    ) : (
+                      <Text>
+                        Penjualan: Rp{' '}
+                        {this.toPrice(
+                          this.state.laporan_harian.jumlah_penjualan,
+                        )}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={{margin: 5}}></View>
+                  <View style={gaya.viewDebitKredit}>
+                    {this.state.laporan_harian == '' ? (
+                      <ActivityIndicator size="small" color="lime" />
+                    ) : (
+                      <Text>
+                        Pembelian: Rp{' '}
+                        {this.toPrice(
+                          this.state.laporan_harian.jumlah_pembelian,
+                        )}
+                      </Text>
+                    )}
+                  </View>
+                  <View style={{margin: 5}}></View>
+                  <View style={gaya.viewDebitKredit}>
+                    {this.state.laporan_harian == '' ? (
+                      <ActivityIndicator size="small" color="lime" />
+                    ) : (
+                      <Text>
+                        Pengeluaran: Rp{' '}
+                        {this.toPrice(
+                          this.state.laporan_harian.jumlah_pengeluaran,
+                        )}
+                      </Text>
+                    )}
+                  </View>
                 </View>
               </View>
-            </View>
+            )}
           </View>
           <Modal
             visible={this.state.modal}
@@ -361,9 +486,9 @@ export default class Pimpinan extends Component {
                     <View>
                       <TouchableNativeFeedback
                         onPress={() => this.handleEditPhoto()}>
-                        {this.state.photo == null ? (
+                        {this.state.photo == '' ? (
                           <Image
-                            source={require('../../assets/plainAvatar.png')}
+                            source={{uri: this.state.image}}
                             style={gaya.imgProfil}
                           />
                         ) : (
@@ -444,6 +569,19 @@ export default class Pimpinan extends Component {
                     </View>
                   </View>
                 </View>
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Image
+                    source={require('../../assets/map-placeholder.png')}
+                    style={{...styles.imgIcon, marginRight: 5}}
+                  />
+                  <TextInput
+                    value={this.state.address}
+                    placeholder="Alamat"
+                    underlineColorAndroid="orange"
+                    style={{flex: 1}}
+                    onChangeText={(input) => this.setState({address: input})}
+                  />
+                </View>
                 <View
                   style={{
                     flexDirection: 'row',
@@ -460,7 +598,11 @@ export default class Pimpinan extends Component {
                     disabled={this.state.tombol_profil}
                     onPress={() => this.updateProfil()}>
                     <View style={{...styles.button, backgroundColor: 'lime'}}>
-                      <Text style={styles.text}>Perbarui</Text>
+                      {this.state.tombol_profil ? (
+                        <ActivityIndicator size="small" color="white" />
+                      ) : (
+                        <Text style={styles.text}>Perbarui</Text>
+                      )}
                     </View>
                   </TouchableNativeFeedback>
                 </View>
