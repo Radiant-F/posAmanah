@@ -134,6 +134,9 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        missingDimensionStrategy 'react-native-camera', 'general'   // Untuk React Native Camera
+        missingDimensionStrategy 'react-native-camera', 'mlkit' // Untuk React Native Camera
+        multiDexEnabled true  // Untuk React Native Camera
     }
     splits {
         abi {
