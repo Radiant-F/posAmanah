@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-community/async-storage';
 import React, {Component} from 'react';
 import ImagePicker from 'react-native-image-picker';
 import _ from 'lodash';
+import LottieView from 'lottie-react-native';
 import {
   Button,
   Image,
@@ -231,7 +232,7 @@ export default class Member extends Component {
 
   render() {
     return (
-      <View style={{flex: 1}}>
+      <View style={{flex: 1, backgroundColor: 'white'}}>
         <ImageBackground style={styles.bg}>
           <View style={{padding: 10}}>
             <View style={styles.header}>
@@ -499,6 +500,11 @@ export default class Member extends Component {
             </View>
           </Modal>
         </ImageBackground>
+        <LottieView
+          source={require('../../assets/39611-coming-soon.json')}
+          autoPlay
+          style={{width: 480, height: 300, alignSelf: 'center', margin: 20}}
+        />
       </View>
     );
   }
