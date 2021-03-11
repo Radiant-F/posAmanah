@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-community/async-storage';
 import React, {Component} from 'react';
+import QRCodeScanner from 'react-native-qrcode-scanner';
 import {
   ActivityIndicator,
   ScrollView,
@@ -11,6 +12,9 @@ import {
   TouchableNativeFeedback,
   Image,
   ToastAndroid,
+  Modal,
+  TouchableHighlight,
+  TouchableWithoutFeedback,
 } from 'react-native';
 
 export default class Gudang extends Component {
@@ -22,9 +26,11 @@ export default class Gudang extends Component {
       loading: true,
       barcode: 0,
       refresh: false,
+      modal: false,
       tunggu: false,
       tunggu_manual: false,
       tombol: false,
+      code: 0,
     };
   }
 
@@ -87,12 +93,19 @@ export default class Gudang extends Component {
       .catch((err) => this.fatal(err));
   }
 
-  addCartManual() {
-    if (this.state.barcode != 0) {
+  addCartManual(code) {
+    this.setState({code: code});
+    console.log(this.state.code);
+    if (this.state.code != 0) {
       this.setState({tunggu_manual: true, tombol: true});
+      this.state.modal
+        ? ToastAndroid.show('Mencari produk..', ToastAndroid.SHORT)
+        : '';
       console.log('memasukan ke keranjang..');
       fetch(
-        `https://amanah-mart.herokuapp.com/api/penjualan/${this.state.barcode}`,
+        this.state.modal
+          ? `https://amanah-mart.herokuapp.com/api/penjualan/${code}`
+          : `https://amanah-mart.herokuapp.com/api/penjualan/${this.state.code}`,
         {
           method: 'POST',
           headers: {
@@ -129,6 +142,12 @@ export default class Gudang extends Component {
     });
   }
 
+  qrCode(code) {
+    console.log(code.data);
+    this.setState({barcode: code.data});
+    this.addCartManual();
+  }
+
   render() {
     return (
       <View style={{flex: 1}}>
@@ -148,7 +167,7 @@ export default class Gudang extends Component {
                 <Text>Masukan Barcode</Text>
                 <TextInput
                   keyboardType="number-pad"
-                  onChangeText={(input) => this.setState({barcode: input})}
+                  onChangeText={(input) => this.setState({code: input})}
                   style={{flex: 1}}
                   placeholder="e.g 12321"
                   underlineColorAndroid="orange"
@@ -170,7 +189,8 @@ export default class Gudang extends Component {
                     />
                   </View>
                 </TouchableNativeFeedback>
-                <TouchableNativeFeedback>
+                <TouchableNativeFeedback
+                  onPress={() => this.setState({modal: true})}>
                   <View style={{...styles.button, width: 50}}>
                     <Image
                       source={require('../../assets/camera.png')}
@@ -221,6 +241,17 @@ export default class Gudang extends Component {
             )}
           </View>
         </ScrollView>
+        <Modal visible={this.state.modal} transparent animationType="fade">
+          <TouchableWithoutFeedback
+            onPress={() => this.setState({modal: false})}>
+            <View style={styles.modal}>
+              <QRCodeScanner
+                showMarker
+                onRead={(code) => this.addCartManual(code.data)}
+              />
+            </View>
+          </TouchableWithoutFeedback>
+        </Modal>
       </View>
     );
   }
@@ -260,5 +291,11 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  modal: {
+    backgroundColor: '#00000085',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
