@@ -180,7 +180,7 @@ export default class RegisterMember extends Component {
                 <TextInput
                   placeholder="Konfirmasi Kata Sandi"
                   underlineColorAndroid="orange"
-                  secureTextEntry={this.state.secure}
+                  secureTextEntry={this.state.secure2}
                   style={{flex: 1}}
                   onChangeText={(input) =>
                     this.setState({password_confirmation: input})
