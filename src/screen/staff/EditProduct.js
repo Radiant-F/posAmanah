@@ -46,8 +46,8 @@ export default class EditProduct extends Component {
       category_id: this.props.route.params.data.category_id,
       stock: this.props.route.params.data.stock,
       merek: this.props.route.params.data.merek,
-      harga_jual: this.props.route.params.data.harga_jual,
-      harga_beli: this.props.route.params.data.harga_beli,
+      harga_jual: JSON.stringify(this.props.route.params.data.harga_jual),
+      harga_beli: JSON.stringify(this.props.route.params.data.harga_beli),
       id: this.props.route.params.data.id,
     });
   }
@@ -227,7 +227,7 @@ export default class EditProduct extends Component {
                 <View style={gaya.inputHarga}>
                   <Text style={gaya.textHarga}>Rp </Text>
                   <TextInput
-                    value={this.toPrice(this.state.harga_beli)}
+                    value={this.state.harga_beli}
                     maxLength={11}
                     placeholder="e.g Rp.50.000,-"
                     underlineColorAndroid="orange"
@@ -242,7 +242,7 @@ export default class EditProduct extends Component {
                 <View style={gaya.inputHarga}>
                   <Text style={gaya.textHarga}>Rp </Text>
                   <TextInput
-                    value={this.toPrice(this.state.harga_jual)}
+                    value={this.state.harga_jual}
                     maxLength={11}
                     placeholder="e.g Rp.100.000,-"
                     underlineColorAndroid="orange"

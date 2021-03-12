@@ -507,6 +507,7 @@ export default class AddProduct extends Component {
         if (responseJSON.status == 'Success') {
           console.log('kategori dihapus');
           ToastAndroid.show('Kategori berhasil dihapus', ToastAndroid.SHORT);
+          this.getCategory();
         } else {
           console.log('kategori gagal dihapus');
           ToastAndroid.show('Mohon periksa koneksi Anda', ToastAndroid.SHORT);
