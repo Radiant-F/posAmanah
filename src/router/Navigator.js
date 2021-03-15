@@ -12,6 +12,7 @@ import Pimpinan from '../screen/pimpinan/Pimpinan';
 import Staff from '../screen/staff/Staff';
 import EditProduct from '../screen/staff/EditProduct';
 import Kasir from '../screen/kasir/Kasir';
+import Gudang from '../screen/pimpinan/Gudang';
 
 const Stack = createStackNavigator();
 const Navigator = () => {
@@ -27,6 +28,7 @@ const Navigator = () => {
         <Stack.Screen name="Staff" component={Staff} />
         <Stack.Screen name="Kasir" component={Kasir} />
         <Stack.Screen name="EditProduct" component={EditProduct} />
+        <Stack.Screen name="Gudang" component={Gudang} />
       </Stack.Navigator>
     </NavigationContainer>
   );
