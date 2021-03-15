@@ -611,6 +611,20 @@ export default class Pimpinan extends Component {
           </Modal>
         </ImageBackground>
         <TopTab />
+        <TouchableNativeFeedback
+          onPress={() => this.props.navigation.navigate('Gudang')}>
+          <View
+            style={{
+              padding: 10,
+              backgroundColor: 'orange',
+              position: 'absolute',
+              bottom: 0,
+              right: 0,
+              borderTopLeftRadius: 10,
+            }}>
+            <Text style={{fontWeight: 'bold'}}>Periksa Gudang</Text>
+          </View>
+        </TouchableNativeFeedback>
       </View>
     );
   }
